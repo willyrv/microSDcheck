@@ -27,23 +27,25 @@ def write_a_file(destination, character, size=1):
         number_of_characters = (1024**3)*size -10
         characters_to_write = character * number_of_characters
         f.write(characters_to_write)
+    print('File {} copied on disk. Computing md5 hash value ...'.format(destination))
     md5_value = md5sum(destination)
+    print("md5 hash computation done. ")
     return md5_value
     
-def md5sum(filename, blocksize=65536):
+def md5sum(filename):
     hash = hashlib.md5()
-    with open(filename, "r+b") as f:
-        for block in iter(lambda: f.read(blocksize), ""):
+    blocksize = 256*128
+    with open(filename, 'rb') as f:
+        for block in iter(lambda: f.read(blocksize), b''):
             hash.update(block)
     return hash.hexdigest()
     
 if __name__ == "__main__":
     
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='Check a microSD memory')
     parser.add_argument("microSDpath")
-    parser.add_argument("-s", "--size", type=int, help="total size to test",
+    parser.add_argument("-s", "--size", type=int, help="total size of the microSD memory (in GB).",
                         default=25)
-                        
     args = parser.parse_args()
     original_md5_sums = []
     copied_md5_sums = []
@@ -51,15 +53,15 @@ if __name__ == "__main__":
     reading_time = 0
     
     # writing the files of size 1GB in the current folder
+    current_dir = os.getcwd()
     for i in range(1, args.size+1):
-        current_dir = os.getcwd()
         newfilename = 'test_data_{}.data'.format(i)
         new_file_path = os.path.join(current_dir, newfilename)
         new_md5 = write_a_file(new_file_path, '0')
         original_md5_sums.append(new_md5)
-        print('Created file {}'.format(i))
         # try to coppy to the microSDcard
         try:
+            print("Coppying file {} to {} ...".format(new_file_path, args.microSDpath))
             start = time.time()
             shutil.copy(new_file_path, args.microSDpath)
             end = time.time()
@@ -73,6 +75,7 @@ if __name__ == "__main__":
     for i in range(1, args.size+1):
         newfilename = 'test_data_{}.data'.format(i)
         copied_file_path = os.path.join(args.microSDpath, newfilename)
+        print("Computing the md5 hash value of {}".format(copied_file_path))
         start = time.time()
         copied_md5_sums.append(md5sum(copied_file_path))
         end = time.time()
